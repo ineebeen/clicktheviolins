@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clickthem!</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url('floor.jpeg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        h1 {
+            font-family: 'Mooli', sans-serif;
+            font-size: 50px;
+            margin: 10px;
+            text-align: center;
+        }
+
+        p {
+            font-family: 'Noto Serif KR', serif;
+            font-size: 20px;
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        #stopwatch {
+            font-family: 'Mooli', sans-serif;
+            font-size: 24px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+
+        #result {
+    font-family: 'Mooli', sans-serif;
+    font-size: 24px;
+    text-align: center;
+    display: none;
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#restartButton {
+    font-family: 'Mooli', sans-serif;
+    text-align: center;
+    display: none;
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <h1>🎻How Fast Can You Click?🎻</h1>
+        <p>^0^바이올린을 최대한 빨리 클릭하세요^0^</p>
+        <button id="startButton" class="button">START</button>
+    </div>
+
+    <div id="stopwatch">이런 바선생</div>
+    <div id="result"></div>
+    <button id="restartButton" class="button">RESTART</button>
+
+    <script>
+        const startButton = document.getElementById('startButton');
+        const container = document.getElementById('container');
+        const stopwatch = document.getElementById('stopwatch');
+        const result = document.getElementById('result');
+        const restartButton = document.getElementById('restartButton');
+        let gameStarted = false;
+        let startTime = 0;
+        let timerInterval;
+
+        startButton.addEventListener('click', () => {
+            // Hide container
+            container.style.display = 'none';
+
+            // Show stopwatch and start timer
+            stopwatch.style.display = 'block';
+            startTimer();
+
+            // Create 20 violin images with random sizes and initial rotations
+            const violins = [];
+            for (let i = 0; i < 20; i++) {
+                const violin = document.createElement('img');
+                violin.src = 'violin.png';
+                violin.className = 'violin';
+                const size = randomBH(50, 200); // Random size
+                violin.style.width = size + 'px';
+                violin.style.height = 'auto';
+                violin.style.position = 'absolute';
+                const left = randomBH(30, window.innerWidth - size - 30) + 'px'; // Limit within 30px from the edges
+                const top = randomBH(30, window.innerHeight - size - 30) + 'px'; // Limit within 30px from the edges
+                violin.style.left = left;
+                violin.style.top = top;
+                const initialRotation = randomBH(0, 360); // Random initial rotation (0-360 degrees)
+                violin.style.transform = `rotate(${initialRotation}deg)`;
+                document.body.appendChild(violin);
+                violins.push(violin);
+
+                // Add click event to each violin
+                violin.addEventListener('click', () => {
+                    // Play punch.mp3
+                    const audio = new Audio('punch.mp3');
+                    audio.volume = 0.5; // Set volume (0.0 to 1.0)
+                    audio.play();
+
+                    // Hide the clicked violin
+                    violin.style.display = 'none';
+
+                    // Check if all violins are gone
+                    if (violins.every(v => v.style.display === 'none')) {
+                        clearInterval(timerInterval); // Stop the timer
+                        showResult();
+                    }
+                });
+
+                // Make violins move with random speed
+                moveViolin(violin);
+            }
+        });
+
+        function startTimer() {
+            if (!gameStarted) {
+                startTime = Date.now();
+                gameStarted = true;
+                updateStopwatch();
+                timerInterval = setInterval(updateStopwatch, 10); // Update every 10 milliseconds
+            }
+        }
+
+        function updateStopwatch() {
+            const currentTime = Date.now() - startTime;
+            const minutes = Math.floor(currentTime / 60000);
+            const seconds = Math.floor((currentTime % 60000) / 1000);
+            const milliseconds = currentTime % 1000;
+            stopwatch.textContent = `이런, 바이올린이 아니라 바선생이네요! 어쨌거나 빨리 잡으세요😆 ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(milliseconds).padStart(3, '0')}`;
+        }
+
+        function randomBH(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function moveViolin(violin) {
+            const minSpeed = 2; // Minimum speed
+            const maxSpeed = 20; // Maximum speed
+            const size = parseInt(violin.style.width);
+            const angle = Math.random() * Math.PI * 2; // Random initial angle
+
+            let left = parseFloat(violin.style.left) || 0;
+            let top = parseFloat(violin.style.top) || 0;
+
+            setInterval(function () {
+                // Calculate new position
+                const speed = randomBH(minSpeed, maxSpeed);
+                left += Math.cos(angle) * speed;
+                top += Math.sin(angle) * speed;
+
+                // Wrap around the screen
+                if (left < 30 - size) {
+                    left = window.innerWidth - 30;
+                } else if (left > window.innerWidth - 30) {
+                    left = 30 - size;
+                }
+
+                if (top < 30 - size) {
+                    top = window.innerHeight - 30;
+                } else if (top > window.innerHeight - 30) {
+                    top = 30 - size;
+                }
+
+                // Apply new position
+                violin.style.left = left + 'px';
+                violin.style.top = top + 'px';
+            }, 30); // Movement interval (30ms)
+        }
+
+        function showResult() {
+            // Hide stopwatch and original message
+            stopwatch.style.display = 'none';
+            result.style.display = 'block';
+
+            const currentTime = Date.now() - startTime;
+            const seconds = (currentTime / 1000).toFixed(2); // Convert to seconds with 2 decimal places
+            result.textContent = `🪳당신이 바선생을 처치하는데 걸린 시간은 ${seconds}초 입니다!🪳`;
+
+            // Show restart button
+            restartButton.style.display = 'block';
+        }
+
+        restartButton.addEventListener('click', () => {
+            // Hide result and restart button
+            result.style.display = 'none';
+            restartButton.style.display = 'none';
+
+            // Show container and start the game again
+            container.style.display = 'flex';
+            gameStarted = false;
+        });
+    </script>
+</body>
+</html>
